@@ -3,34 +3,13 @@
     <editor-bookmarks xmlns="http://www.netbeans.org/ns/editor-bookmarks/2" lastBookmarkId="0"/>
     <open-files xmlns="http://www.netbeans.org/ns/projectui-open-files/2">
         <group>
-            <file>file:/C:/Users/tanga/Documents/NetBeansProjects/GreenPasturesFarm/src/greenpasteures/enums/AnimalStatus.java</file>
-            <file>file:/C:/Users/tanga/Documents/NetBeansProjects/GreenPasturesFarm/src/greenpasteures/enums/Gender.java</file>
-            <file>file:/C:/Users/tanga/Documents/NetBeansProjects/GreenPasturesFarm/src/greenpasteures/enums/LivestockType.java</file>
-            <file>file:/C:/Users/tanga/Documents/NetBeansProjects/GreenPasturesFarm/src/greenpasteures/enums/StockCategory.java</file>
-            <file>file:/C:/Users/tanga/Documents/NetBeansProjects/GreenPasturesFarm/src/greenpasteures/models/Reportable.java</file>
-            <file>file:/C:/Users/tanga/Documents/NetBeansProjects/GreenPasturesFarm/src/greenpasteures/models/Animal.java</file>
-            <file>file:/C:/Users/tanga/Documents/NetBeansProjects/GreenPasturesFarm/src/greenpasteures/models/Cattle.java</file>
-            <file>file:/C:/Users/tanga/Documents/NetBeansProjects/GreenPasturesFarm/src/greenpasteures/models/Sheep.java</file>
-            <file>file:/C:/Users/tanga/Documents/NetBeansProjects/GreenPasturesFarm/src/greenpasteures/models/Poultry.java</file>
-            <file>file:/C:/Users/tanga/Documents/NetBeansProjects/GreenPasturesFarm/src/greenpasteures/models/Staff.java</file>
-            <file>file:/C:/Users/tanga/Documents/NetBeansProjects/GreenPasturesFarm/src/greenpasteures/models/HealthRecord.java</file>
-            <file>file:/C:/Users/tanga/Documents/NetBeansProjects/GreenPasturesFarm/src/greenpasteures/models/StockItem.java</file>
-            <file>file:/C:/Users/tanga/Documents/NetBeansProjects/GreenPasturesFarm/src/greenpasteures/database/DatabaseManager.java</file>
-            <file>file:/C:/Users/tanga/Documents/NetBeansProjects/GreenPasturesFarm/src/greenpasteures/database/AnimalDAO.java</file>
             <file>file:/C:/Users/tanga/Documents/NetBeansProjects/GreenPasturesFarm/src/greenpasteures/database/StaffDAO.java</file>
-            <file>file:/C:/Users/tanga/Documents/NetBeansProjects/GreenPasturesFarm/src/greenpasteures/database/HealthDAO.java</file>
-            <file>file:/C:/Users/tanga/Documents/NetBeansProjects/GreenPasturesFarm/src/greenpasteures/database/StockDAO.java</file>
-            <file>file:/C:/Users/tanga/Documents/NetBeansProjects/GreenPasturesFarm/src/greenpasteures/reports/FarmReport.java</file>
-            <file>file:/C:/Users/tanga/Documents/NetBeansProjects/GreenPasturesFarm/src/greenpasteures/reports/CSVExporter.java</file>
-            <file>file:/C:/Users/tanga/Documents/NetBeansProjects/GreenPasturesFarm/src/greenpasteures/reports/PDFExporter.java</file>
             <file>file:/C:/Users/tanga/Documents/NetBeansProjects/GreenPasturesFarm/src/greenpasteures/gui/LoginFrame.java</file>
+            <file>file:/C:/Users/tanga/Documents/NetBeansProjects/GreenPasturesFarm/src/greenpasteures/gui/SignUpFrame.java</file>
+            <file>file:/C:/Users/tanga/Documents/NetBeansProjects/GreenPasturesFarm/src/greenpasteures/gui/StaffPanel.java</file>
             <file>file:/C:/Users/tanga/Documents/NetBeansProjects/GreenPasturesFarm/src/greenpasteures/gui/MainFrame.java</file>
             <file>file:/C:/Users/tanga/Documents/NetBeansProjects/GreenPasturesFarm/src/greenpasteures/gui/DashboardPanel.java</file>
-            <file>file:/C:/Users/tanga/Documents/NetBeansProjects/GreenPasturesFarm/src/greenpasteures/gui/AnimalPanel.java</file>
-            <file>file:/C:/Users/tanga/Documents/NetBeansProjects/GreenPasturesFarm/src/greenpasteures/gui/HealthPanel.java</file>
-            <file>file:/C:/Users/tanga/Documents/NetBeansProjects/GreenPasturesFarm/src/greenpasteures/gui/StockPanel.java</file>
             <file>file:/C:/Users/tanga/Documents/NetBeansProjects/GreenPasturesFarm/src/greenpasteures/gui/Main.java</file>
-            <file>file:/C:/Users/tanga/Documents/NetBeansProjects/GreenPasturesFarm/src/greenpasteures/gui/ReportPanel.java</file>
         </group>
     </open-files>
 </project-private>

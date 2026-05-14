@@ -8,16 +8,22 @@ import javax.swing.border.EmptyBorder;
 import javax.swing.table.DefaultTableModel;
 import java.awt.*;
 import java.util.List;
+import greenpasteures.models.Staff;
+
 
 public class DashboardPanel extends JPanel {
 
     // constructor
-    public DashboardPanel() {
-        setLayout(new BorderLayout());
-        setBackground(new Color(250, 250, 248));
-        setBorder(new EmptyBorder(20, 24, 20, 24));
-        build();
-    }
+    private Staff loggedInStaff;
+
+public DashboardPanel(Staff staff) {
+    this.loggedInStaff = staff;
+    setLayout(new BorderLayout());
+    setBackground(new Color(250, 250, 248));
+    setBorder(new EmptyBorder(20, 24, 20, 24));
+    build();
+}
+
 
     // builds the dashboard
     private void build() {
