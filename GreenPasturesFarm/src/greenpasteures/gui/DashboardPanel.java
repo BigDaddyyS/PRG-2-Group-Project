@@ -3,118 +3,161 @@ package greenpasteures.gui;
 import greenpasteures.database.AnimalDAO;
 import greenpasteures.database.HealthDAO;
 import greenpasteures.database.StockDAO;
+import greenpasteures.models.Staff;
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import javax.swing.table.DefaultTableModel;
 import java.awt.*;
+import java.time.LocalDate;
 import java.util.List;
-import greenpasteures.models.Staff;
-
 
 public class DashboardPanel extends JPanel {
 
-    // constructor
     private Staff loggedInStaff;
 
-public DashboardPanel(Staff staff) {
-    this.loggedInStaff = staff;
-    setLayout(new BorderLayout());
-    setBackground(new Color(250, 250, 248));
-    setBorder(new EmptyBorder(20, 24, 20, 24));
-    build();
-}
+    // keep references so we can refresh them
+    private JLabel totalLabel;
+    private JLabel healthyLabel;
+    private JLabel sickLabel;
+    private JLabel lowStockLabel;
+    private DefaultTableModel recentModel;
 
+    public DashboardPanel(Staff staff) {
+        this.loggedInStaff = staff;
+        setLayout(new BorderLayout());
+        setBackground(new Color(250, 250, 248));
+        setBorder(new EmptyBorder(20, 24, 20, 24));
+        build();
+    }
 
-    // builds the dashboard
     private void build() {
+
+        // top section - title and welcome message
+        JPanel topSection = new JPanel();
+        topSection.setLayout(new BoxLayout(topSection, BoxLayout.Y_AXIS));
+        topSection.setOpaque(false);
+        topSection.setBorder(new EmptyBorder(0, 0, 20, 0));
+
         JLabel title = new JLabel("Dashboard");
-        title.setFont(new Font("SansSerif", Font.BOLD, 16));
-        title.setBorder(new EmptyBorder(0, 0, 16, 0));
-        add(title, BorderLayout.NORTH);
+        title.setFont(new Font("SansSerif", Font.BOLD, 18));
+        title.setForeground(new Color(40, 40, 40));
+        title.setAlignmentX(Component.LEFT_ALIGNMENT);
 
-        // get counts from the database
-        AnimalDAO animalDAO = new AnimalDAO();
-        StockDAO  stockDAO  = new StockDAO();
-        HealthDAO healthDAO = new HealthDAO();
+        JLabel welcome = new JLabel("Welcome back, " + loggedInStaff.getFullName() + "!   |   Today: " + LocalDate.now());
+        welcome.setFont(new Font("SansSerif", Font.PLAIN, 12));
+        welcome.setForeground(Color.GRAY);
+        welcome.setAlignmentX(Component.LEFT_ALIGNMENT);
 
-        int total    = animalDAO.countAll();
-        int healthy  = animalDAO.countByStatus("HEALTHY");
-        int sick     = animalDAO.countByStatus("SICK");
-        int lowStock = stockDAO.countLowStock();
+        topSection.add(title);
+        topSection.add(Box.createVerticalStrut(4));
+        topSection.add(welcome);
+        add(topSection, BorderLayout.NORTH);
 
         JPanel centre = new JPanel();
         centre.setLayout(new BoxLayout(centre, BoxLayout.Y_AXIS));
         centre.setOpaque(false);
 
         // metric cards row
-        JPanel metrics = new JPanel(new GridLayout(1, 4, 12, 0));
+        JPanel metrics = new JPanel(new GridLayout(1, 4, 14, 0));
         metrics.setOpaque(false);
-        metrics.setMaximumSize(new Dimension(Integer.MAX_VALUE, 80));
-        metrics.add(metricCard("Total animals",    String.valueOf(total),    new Color(39, 80, 10)));
-        metrics.add(metricCard("Healthy",          String.valueOf(healthy),  new Color(39, 80, 10)));
-        metrics.add(metricCard("Sick",             String.valueOf(sick),     new Color(180, 40, 40)));
-        metrics.add(metricCard("Low stock items",  String.valueOf(lowStock), new Color(150, 100, 10)));
+        metrics.setMaximumSize(new Dimension(Integer.MAX_VALUE, 100));
+
+        // create metric value labels so we can update them later
+        totalLabel    = metricValue();
+        healthyLabel  = metricValue();
+        sickLabel     = metricValue();
+        lowStockLabel = metricValue();
+
+        sickLabel.setForeground(new Color(180, 40, 40));
+        lowStockLabel.setForeground(new Color(150, 100, 10));
+
+        metrics.add(metricCard("Total Animals",   totalLabel,    new Color(232, 244, 230)));
+        metrics.add(metricCard("Healthy",         healthyLabel,  new Color(232, 244, 230)));
+        metrics.add(metricCard("Sick",            sickLabel,     new Color(250, 230, 230)));
+        metrics.add(metricCard("Low Stock Items", lowStockLabel, new Color(252, 243, 220)));
 
         centre.add(metrics);
-        centre.add(Box.createVerticalStrut(24));
+        centre.add(Box.createVerticalStrut(28));
 
-        // recent health records table
-        JLabel tableTitle = new JLabel("Recent health records");
-        tableTitle.setFont(new Font("SansSerif", Font.BOLD, 13));
+        // recent animals section
+        JLabel tableTitle = new JLabel("Recently Added Animals");
+        tableTitle.setFont(new Font("SansSerif", Font.BOLD, 14));
+        tableTitle.setForeground(new Color(40, 40, 40));
         centre.add(tableTitle);
-        centre.add(Box.createVerticalStrut(8));
+        centre.add(Box.createVerticalStrut(10));
 
-        String[] cols = {"Tag no.", "Type", "Treatment", "Attended by", "Date"};
-        DefaultTableModel model = new DefaultTableModel(cols, 0) {
-            @Override
-            public boolean isCellEditable(int r, int c) {
-                return false;
-            }
+        String[] cols = {"Tag No.", "Type", "Breed", "Status", "Date Registered"};
+        recentModel = new DefaultTableModel(cols, 0) {
+            @Override public boolean isCellEditable(int r, int c) { return false; }
         };
 
-        List<Object[]> recent = healthDAO.getRecentRecords(5);
-        for (int i = 0; i < recent.size(); i++) {
-            model.addRow(recent.get(i));
-        }
+        JTable table = new JTable(recentModel);
+        table.setFont(new Font("SansSerif", Font.PLAIN, 12));
+        table.setRowHeight(30);
+        table.getTableHeader().setFont(new Font("SansSerif", Font.BOLD, 11));
+        table.getTableHeader().setBackground(new Color(232, 244, 230));
+        table.getTableHeader().setForeground(new Color(39, 80, 10));
+        table.setShowGrid(false);
+        table.setSelectionBackground(new Color(220, 235, 200));
 
-        JTable table = buildTable(model);
         JScrollPane scroll = new JScrollPane(table);
         scroll.setBorder(BorderFactory.createLineBorder(new Color(220, 220, 210)));
         centre.add(scroll);
 
         add(centre, BorderLayout.CENTER);
+
+        // load data for the first time
+        loadData();
     }
 
-    // creates a single metric card
-    private JPanel metricCard(String label, String value, Color valueColor) {
+    // this method loads all dashboard data from the database
+    // it is called on first load and every time refreshDashboard() is called
+    public void loadData() {
+        AnimalDAO animalDAO = new AnimalDAO();
+        StockDAO  stockDAO  = new StockDAO();
+
+        // update metric cards
+        totalLabel.setText(String.valueOf(animalDAO.countAll()));
+        healthyLabel.setText(String.valueOf(animalDAO.countByStatus("HEALTHY")));
+        sickLabel.setText(String.valueOf(animalDAO.countByStatus("SICK")));
+        lowStockLabel.setText(String.valueOf(stockDAO.countLowStock()));
+
+        // update recent animals table
+        recentModel.setRowCount(0);
+        List<Object[]> recent = animalDAO.getRecentAnimals(5);
+        for (int i = 0; i < recent.size(); i++) {
+            recentModel.addRow(recent.get(i));
+        }
+    }
+
+    // creates a metric card panel with a label and a value label inside
+    private JPanel metricCard(String label, JLabel valueLabel, Color bgColor) {
         JPanel card = new JPanel();
         card.setLayout(new BoxLayout(card, BoxLayout.Y_AXIS));
-        card.setBackground(new Color(240, 242, 236));
-        card.setBorder(new EmptyBorder(14, 16, 14, 16));
+        card.setBackground(bgColor);
+        card.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createLineBorder(new Color(210, 225, 205), 1),
+            new EmptyBorder(18, 20, 18, 20)
+        ));
 
         JLabel lbl = new JLabel(label);
         lbl.setFont(new Font("SansSerif", Font.PLAIN, 11));
-        lbl.setForeground(Color.GRAY);
+        lbl.setForeground(new Color(100, 100, 100));
+        lbl.setAlignmentX(Component.LEFT_ALIGNMENT);
 
-        JLabel val = new JLabel(value);
-        val.setFont(new Font("SansSerif", Font.BOLD, 24));
-        val.setForeground(valueColor);
+        valueLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
 
         card.add(lbl);
-        card.add(Box.createVerticalStrut(4));
-        card.add(val);
+        card.add(Box.createVerticalStrut(6));
+        card.add(valueLabel);
         return card;
     }
 
-    // creates a styled JTable
-    private JTable buildTable(DefaultTableModel model) {
-        JTable table = new JTable(model);
-        table.setFont(new Font("SansSerif", Font.PLAIN, 12));
-        table.setRowHeight(28);
-        table.getTableHeader().setFont(new Font("SansSerif", Font.BOLD, 11));
-        table.getTableHeader().setBackground(new Color(240, 242, 236));
-        table.setShowGrid(false);
-        table.setSelectionBackground(new Color(220, 235, 200));
-        return table;
+    // creates a default metric value label
+    private JLabel metricValue() {
+        JLabel lbl = new JLabel("0");
+        lbl.setFont(new Font("SansSerif", Font.BOLD, 32));
+        lbl.setForeground(new Color(39, 80, 10));
+        return lbl;
     }
 }

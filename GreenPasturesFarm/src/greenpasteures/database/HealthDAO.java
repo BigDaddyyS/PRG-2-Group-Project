@@ -11,7 +11,6 @@ public class HealthDAO {
 
     private Connection conn;
 
-    // constructor - gets the database connection
     public HealthDAO() {
         this.conn = DatabaseManager.getInstance().getConnection();
     }
@@ -21,10 +20,8 @@ public class HealthDAO {
         List<Object[]> rows = new ArrayList<>();
         String sql = "SELECT h.recordId, h.tagNumber, h.diagnosis, h.treatment, " +
                      "h.medicineUsed, CONCAT(s.firstName,' ',s.lastName) AS attendedBy, h.treatmentDate " +
-                     "FROM health_records h " +
-                     "JOIN staff s ON h.attendedBy = s.staffId " +
+                     "FROM health_records h JOIN staff s ON h.attendedBy = s.staffId " +
                      "ORDER BY h.treatmentDate DESC";
-
         try {
             PreparedStatement stmt = conn.prepareStatement(sql);
             ResultSet rs = stmt.executeQuery();
@@ -42,7 +39,6 @@ public class HealthDAO {
         } catch (SQLException e) {
             System.out.println("Error loading health records: " + e.getMessage());
         }
-
         return rows;
     }
 
@@ -66,6 +62,37 @@ public class HealthDAO {
         }
     }
 
+    // updates an existing health record
+    public boolean updateRecord(int recordId, String diagnosis, String treatment,
+                                String medicineUsed, String treatmentDate) {
+        String sql = "UPDATE health_records SET diagnosis = ?, treatment = ?, medicineUsed = ?, treatmentDate = ? WHERE recordId = ?";
+        try {
+            PreparedStatement stmt = conn.prepareStatement(sql);
+            stmt.setString(1, diagnosis);
+            stmt.setString(2, treatment);
+            stmt.setString(3, medicineUsed);
+            stmt.setString(4, treatmentDate);
+            stmt.setInt(5, recordId);
+            return stmt.executeUpdate() > 0;
+        } catch (SQLException e) {
+            System.out.println("Update health record failed: " + e.getMessage());
+            return false;
+        }
+    }
+
+    // deletes a health record
+    public boolean deleteRecord(int recordId) {
+        String sql = "DELETE FROM health_records WHERE recordId = ?";
+        try {
+            PreparedStatement stmt = conn.prepareStatement(sql);
+            stmt.setInt(1, recordId);
+            return stmt.executeUpdate() > 0;
+        } catch (SQLException e) {
+            System.out.println("Delete health record failed: " + e.getMessage());
+            return false;
+        }
+    }
+
     // returns the most recent health records for the dashboard
     public List<Object[]> getRecentRecords(int limit) {
         List<Object[]> rows = new ArrayList<>();
@@ -75,7 +102,6 @@ public class HealthDAO {
                      "JOIN staff s ON h.attendedBy = s.staffId " +
                      "JOIN animals a ON h.tagNumber = a.tagNumber " +
                      "ORDER BY h.treatmentDate DESC LIMIT ?";
-
         try {
             PreparedStatement stmt = conn.prepareStatement(sql);
             stmt.setInt(1, limit);
@@ -92,7 +118,20 @@ public class HealthDAO {
         } catch (SQLException e) {
             System.out.println("Error loading recent records: " + e.getMessage());
         }
-
         return rows;
+    }
+
+    // checks if a tag number exists in the animals table
+    public boolean animalExists(String tagNumber) {
+        String sql = "SELECT COUNT(*) FROM animals WHERE tagNumber = ?";
+        try {
+            PreparedStatement stmt = conn.prepareStatement(sql);
+            stmt.setString(1, tagNumber);
+            ResultSet rs = stmt.executeQuery();
+            if (rs.next()) return rs.getInt(1) > 0;
+        } catch (SQLException e) {
+            System.out.println("Animal check error: " + e.getMessage());
+        }
+        return false;
     }
 }

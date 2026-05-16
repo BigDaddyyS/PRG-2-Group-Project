@@ -10,14 +10,15 @@ public class MainFrame extends JFrame {
     private CardLayout cardLayout;
     private JPanel     contentArea;
     private JButton    activeNavButton;
-    private final Staff      loggedInStaff;
+    private Staff      loggedInStaff;
 
-    // check if the logged in user is an admin
+    // keep a reference to the dashboard so we can refresh it
+    private DashboardPanel dashboardPanel;
+
     private boolean isAdmin() {
         return loggedInStaff.getRole().equalsIgnoreCase("ADMIN");
     }
 
-    // constructor - receives the logged in staff member
     public MainFrame(Staff staff) {
         this.loggedInStaff = staff;
         setTitle("Green Pastures Farm Management System");
@@ -28,7 +29,6 @@ public class MainFrame extends JFrame {
         buildUI();
     }
 
-    // builds the main frame with sidebar and content area
     private void buildUI() {
         setLayout(new BorderLayout());
         add(buildTopBar(),  BorderLayout.NORTH);
@@ -38,13 +38,14 @@ public class MainFrame extends JFrame {
         contentArea = new JPanel(cardLayout);
         contentArea.setBackground(new Color(250, 250, 248));
 
-        // these panels are visible to everyone
-        contentArea.add(new DashboardPanel(loggedInStaff), "dashboard");
-        contentArea.add(new AnimalPanel(),                  "animals");
-        contentArea.add(new HealthPanel(loggedInStaff),     "health");
-        contentArea.add(new StockPanel(),                   "stock");
+        // create dashboard and save reference so we can refresh it later
+        dashboardPanel = new DashboardPanel(loggedInStaff);
 
-        // these panels are only visible to admins
+        contentArea.add(dashboardPanel,                   "dashboard");
+        contentArea.add(new AnimalPanel(),                "animals");
+        contentArea.add(new HealthPanel(loggedInStaff),   "health");
+        contentArea.add(new StockPanel(),                 "stock");
+
         if (isAdmin()) {
             contentArea.add(new ReportPanel(loggedInStaff), "reports");
             contentArea.add(new StaffPanel(),               "staff");
@@ -55,7 +56,12 @@ public class MainFrame extends JFrame {
         add(scroll, BorderLayout.CENTER);
     }
 
-    // builds the green top bar
+    // this method is called by AnimalPanel after adding or deleting an animal
+    // it tells the dashboard to reload its data from the database
+    public void refreshDashboard() {
+        dashboardPanel.loadData();
+    }
+
     private JPanel buildTopBar() {
         JPanel bar = new JPanel(new BorderLayout());
         bar.setBackground(new Color(39, 80, 10));
@@ -66,7 +72,6 @@ public class MainFrame extends JFrame {
         appTitle.setFont(new Font("SansSerif", Font.BOLD, 15));
         appTitle.setForeground(Color.WHITE);
 
-        // show the user's name and role in the top right
         String roleTag = isAdmin() ? "Admin" : "Staff";
         JLabel userLabel = new JLabel(loggedInStaff.getFullName() + "  |  " + roleTag);
         userLabel.setFont(new Font("SansSerif", Font.PLAIN, 12));
@@ -77,7 +82,6 @@ public class MainFrame extends JFrame {
         return bar;
     }
 
-    // builds the left sidebar with navigation buttons
     private JPanel buildSidebar() {
         JPanel sidebar = new JPanel();
         sidebar.setLayout(new BoxLayout(sidebar, BoxLayout.Y_AXIS));
@@ -88,7 +92,6 @@ public class MainFrame extends JFrame {
         ));
         sidebar.setPreferredSize(new Dimension(185, 0));
 
-        // farm logo
         JLabel logo = new JLabel("\uD83C\uDF3F GP Farm");
         logo.setFont(new Font("SansSerif", Font.BOLD, 14));
         logo.setForeground(new Color(39, 80, 10));
@@ -96,14 +99,12 @@ public class MainFrame extends JFrame {
         logo.setAlignmentX(Component.LEFT_ALIGNMENT);
         sidebar.add(logo);
 
-        // divider
         JSeparator sep = new JSeparator();
         sep.setMaximumSize(new Dimension(Integer.MAX_VALUE, 1));
         sep.setForeground(new Color(210, 210, 200));
         sidebar.add(sep);
         sidebar.add(Box.createVerticalStrut(10));
 
-        // menu label
         JLabel menuLabel = new JLabel("MENU");
         menuLabel.setFont(new Font("SansSerif", Font.BOLD, 10));
         menuLabel.setForeground(Color.GRAY);
@@ -111,7 +112,6 @@ public class MainFrame extends JFrame {
         menuLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
         sidebar.add(menuLabel);
 
-        // nav buttons visible to EVERYONE
         JButton dashBtn   = createNavButton("Dashboard",      "dashboard");
         JButton animalBtn = createNavButton("Animals",        "animals");
         JButton healthBtn = createNavButton("Health Records", "health");
@@ -125,7 +125,6 @@ public class MainFrame extends JFrame {
         sidebar.add(Box.createVerticalStrut(2));
         sidebar.add(stockBtn);
 
-        // admin only section
         if (isAdmin()) {
             sidebar.add(Box.createVerticalStrut(14));
 
@@ -136,18 +135,12 @@ public class MainFrame extends JFrame {
             adminLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
             sidebar.add(adminLabel);
 
-            JButton reportBtn = createNavButton("Reports",         "reports");
-            JButton staffBtn  = createNavButton("Staff Management","staff");
-
-            // give these buttons a slightly different look to show they are admin only
-            reportBtn.setFont(new Font("SansSerif", Font.PLAIN, 13));
-            staffBtn.setFont(new Font("SansSerif", Font.PLAIN, 13));
-
+            JButton reportBtn = createNavButton("Reports",          "reports");
+            JButton staffBtn  = createNavButton("Staff Management", "staff");
             sidebar.add(reportBtn);
             sidebar.add(Box.createVerticalStrut(2));
             sidebar.add(staffBtn);
         } else {
-            // show a locked message for staff users
             sidebar.add(Box.createVerticalStrut(14));
             JSeparator sep2 = new JSeparator();
             sep2.setMaximumSize(new Dimension(Integer.MAX_VALUE, 1));
@@ -172,7 +165,6 @@ public class MainFrame extends JFrame {
 
         sidebar.add(Box.createVerticalGlue());
 
-        // sign out button
         JButton signOut = new JButton("Sign out");
         signOut.setMaximumSize(new Dimension(Integer.MAX_VALUE, 36));
         signOut.setHorizontalAlignment(SwingConstants.LEFT);
@@ -188,8 +180,7 @@ public class MainFrame extends JFrame {
 
         signOut.addActionListener(e -> {
             int c = JOptionPane.showConfirmDialog(this,
-                "Are you sure you want to sign out?",
-                "Sign out", JOptionPane.YES_NO_OPTION);
+                "Are you sure you want to sign out?", "Sign out", JOptionPane.YES_NO_OPTION);
             if (c == JOptionPane.YES_OPTION) {
                 new LoginFrame().setVisible(true);
                 dispose();
@@ -201,7 +192,6 @@ public class MainFrame extends JFrame {
         return sidebar;
     }
 
-    // creates a navigation button that switches the panel on click
     private JButton createNavButton(String label, String key) {
         JButton btn = new JButton(label);
         styleNavBtn(btn, false);
@@ -212,7 +202,6 @@ public class MainFrame extends JFrame {
         return btn;
     }
 
-    // styles a navigation button
     private void styleNavBtn(JButton btn, boolean active) {
         btn.setMaximumSize(new Dimension(Integer.MAX_VALUE, 38));
         btn.setHorizontalAlignment(SwingConstants.LEFT);
@@ -222,7 +211,6 @@ public class MainFrame extends JFrame {
         btn.setOpaque(true);
         btn.setContentAreaFilled(true);
         btn.setBorderPainted(false);
-
         if (active) {
             btn.setBackground(new Color(39, 80, 10));
             btn.setForeground(Color.WHITE);
@@ -234,11 +222,8 @@ public class MainFrame extends JFrame {
         }
     }
 
-    // highlights the currently active nav button
     private void setActiveButton(JButton btn) {
-        if (activeNavButton != null) {
-            styleNavBtn(activeNavButton, false);
-        }
+        if (activeNavButton != null) styleNavBtn(activeNavButton, false);
         styleNavBtn(btn, true);
         activeNavButton = btn;
     }

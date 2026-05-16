@@ -11,7 +11,6 @@ public class AnimalDAO {
 
     private Connection conn;
 
-    // constructor - gets the database connection
     public AnimalDAO() {
         this.conn = DatabaseManager.getInstance().getConnection();
     }
@@ -20,7 +19,6 @@ public class AnimalDAO {
     public List<Object[]> getAllAnimals() {
         List<Object[]> rows = new ArrayList<>();
         String sql = "SELECT tagNumber, animalType, breed, gender, status, dateRegistered FROM animals ORDER BY dateRegistered DESC";
-
         try {
             PreparedStatement stmt = conn.prepareStatement(sql);
             ResultSet rs = stmt.executeQuery();
@@ -37,36 +35,21 @@ public class AnimalDAO {
         } catch (SQLException e) {
             System.out.println("Error loading animals: " + e.getMessage());
         }
-
         return rows;
     }
 
-    // returns animals filtered by type and status
+    // returns filtered animals by type and status
     public List<Object[]> getFilteredAnimals(String type, String status) {
         List<Object[]> rows = new ArrayList<>();
-
         String sql = "SELECT tagNumber, animalType, breed, gender, status, dateRegistered FROM animals WHERE 1=1";
-
-        if (!type.equals("All")) {
-            sql = sql + " AND animalType = ?";
-        }
-        if (!status.equals("All")) {
-            sql = sql + " AND status = ?";
-        }
+        if (!type.equals("All"))   sql = sql + " AND animalType = ?";
+        if (!status.equals("All")) sql = sql + " AND status = ?";
         sql = sql + " ORDER BY dateRegistered DESC";
-
         try {
             PreparedStatement stmt = conn.prepareStatement(sql);
-
             int index = 1;
-            if (!type.equals("All")) {
-                stmt.setString(index, type);
-                index++;
-            }
-            if (!status.equals("All")) {
-                stmt.setString(index, status);
-            }
-
+            if (!type.equals("All"))   { stmt.setString(index, type);   index++; }
+            if (!status.equals("All")) { stmt.setString(index, status); }
             ResultSet rs = stmt.executeQuery();
             while (rs.next()) {
                 Object[] row = new Object[6];
@@ -81,18 +64,16 @@ public class AnimalDAO {
         } catch (SQLException e) {
             System.out.println("Error filtering animals: " + e.getMessage());
         }
-
         return rows;
     }
 
     // adds a new animal to both the animals table and the specific type table
     public boolean addAnimal(String tagNumber, String animalType, String breed,
-                             String gender, String status, String dateRegistered) {
+                             String gender, String status, String dateRegistered, double weight) {
         String animalSql = "INSERT INTO animals (tagNumber, animalType, breed, gender, status, dateRegistered) VALUES (?, ?, ?, ?, ?, ?)";
         String typeSql;
-
         if (animalType.toUpperCase().equals("CATTLE")) {
-            typeSql = "INSERT INTO cattle (tagNumber) VALUES (?)";
+            typeSql = "INSERT INTO cattle (tagNumber, weight) VALUES (?, ?)";
         } else if (animalType.toUpperCase().equals("SHEEP")) {
             typeSql = "INSERT INTO sheep (tagNumber) VALUES (?)";
         } else if (animalType.toUpperCase().equals("POULTRY")) {
@@ -100,10 +81,8 @@ public class AnimalDAO {
         } else {
             return false;
         }
-
         try {
             conn.setAutoCommit(false);
-
             PreparedStatement s1 = conn.prepareStatement(animalSql);
             s1.setString(1, tagNumber);
             s1.setString(2, animalType.toUpperCase());
@@ -115,63 +94,149 @@ public class AnimalDAO {
 
             PreparedStatement s2 = conn.prepareStatement(typeSql);
             s2.setString(1, tagNumber);
+            if (animalType.toUpperCase().equals("CATTLE")) {
+                s2.setDouble(2, weight);
+            }
             s2.executeUpdate();
 
             conn.commit();
             conn.setAutoCommit(true);
             return true;
-
         } catch (SQLException e) {
-            try {
-                conn.rollback();
-                conn.setAutoCommit(true);
-            } catch (SQLException ex) {
-                System.out.println("Rollback failed: " + ex.getMessage());
-            }
+            try { conn.rollback(); conn.setAutoCommit(true); } catch (SQLException ex) {}
             System.out.println("Add animal failed: " + e.getMessage());
             return false;
         }
     }
 
-    // updates the status of an animal
-    public boolean updateStatus(String tagNumber, String newStatus) {
-        String sql = "UPDATE animals SET status = ? WHERE tagNumber = ?";
+    // updates an existing animal record
+    public boolean updateAnimal(String tagNumber, String breed, String gender,
+                                String status, double weight, String animalType) {
+        String animalSql = "UPDATE animals SET breed = ?, gender = ?, status = ? WHERE tagNumber = ?";
         try {
-            PreparedStatement stmt = conn.prepareStatement(sql);
-            stmt.setString(1, newStatus.toUpperCase());
-            stmt.setString(2, tagNumber);
-            return stmt.executeUpdate() > 0;
+            conn.setAutoCommit(false);
+
+            PreparedStatement s1 = conn.prepareStatement(animalSql);
+            s1.setString(1, breed);
+            s1.setString(2, gender);
+            s1.setString(3, status.toUpperCase());
+            s1.setString(4, tagNumber);
+            s1.executeUpdate();
+
+            // update weight in the type specific table
+            if (animalType.toUpperCase().equals("CATTLE")) {
+                PreparedStatement s2 = conn.prepareStatement("UPDATE cattle SET weight = ? WHERE tagNumber = ?");
+                s2.setDouble(1, weight);
+                s2.setString(2, tagNumber);
+                s2.executeUpdate();
+            } else if (animalType.toUpperCase().equals("SHEEP")) {
+                PreparedStatement s2 = conn.prepareStatement("UPDATE sheep SET wool = ? WHERE tagNumber = ?");
+                s2.setDouble(1, weight);
+                s2.setString(2, tagNumber);
+                s2.executeUpdate();
+            }
+
+            conn.commit();
+            conn.setAutoCommit(true);
+            return true;
         } catch (SQLException e) {
-            System.out.println("Update status failed: " + e.getMessage());
+            try { conn.rollback(); conn.setAutoCommit(true); } catch (SQLException ex) {}
+            System.out.println("Update animal failed: " + e.getMessage());
             return false;
         }
     }
 
-    // counts animals by a specific status
+    // deletes an animal and all its related records
+    public boolean deleteAnimal(String tagNumber, String animalType) {
+        try {
+            conn.setAutoCommit(false);
+
+            // delete health records first because of foreign key
+            PreparedStatement s1 = conn.prepareStatement("DELETE FROM health_records WHERE tagNumber = ?");
+            s1.setString(1, tagNumber);
+            s1.executeUpdate();
+
+            // delete from type specific table
+            String typeTable = "cattle";
+            if (animalType.toUpperCase().equals("SHEEP"))   typeTable = "sheep";
+            if (animalType.toUpperCase().equals("POULTRY")) typeTable = "poultry";
+            PreparedStatement s2 = conn.prepareStatement("DELETE FROM " + typeTable + " WHERE tagNumber = ?");
+            s2.setString(1, tagNumber);
+            s2.executeUpdate();
+
+            // delete from main animals table
+            PreparedStatement s3 = conn.prepareStatement("DELETE FROM animals WHERE tagNumber = ?");
+            s3.setString(1, tagNumber);
+            s3.executeUpdate();
+
+            conn.commit();
+            conn.setAutoCommit(true);
+            return true;
+        } catch (SQLException e) {
+            try { conn.rollback(); conn.setAutoCommit(true); } catch (SQLException ex) {}
+            System.out.println("Delete animal failed: " + e.getMessage());
+            return false;
+        }
+    }
+
+    // checks if a tag number already exists
+    public boolean tagExists(String tagNumber) {
+        String sql = "SELECT COUNT(*) FROM animals WHERE tagNumber = ?";
+        try {
+            PreparedStatement stmt = conn.prepareStatement(sql);
+            stmt.setString(1, tagNumber);
+            ResultSet rs = stmt.executeQuery();
+            if (rs.next()) return rs.getInt(1) > 0;
+        } catch (SQLException e) {
+            System.out.println("Tag check error: " + e.getMessage());
+        }
+        return false;
+    }
+
+    // returns the 5 most recently added animals for the dashboard
+    public List<Object[]> getRecentAnimals(int limit) {
+        List<Object[]> rows = new ArrayList<>();
+        String sql = "SELECT tagNumber, animalType, breed, status, dateRegistered FROM animals ORDER BY dateRegistered DESC LIMIT ?";
+        try {
+            PreparedStatement stmt = conn.prepareStatement(sql);
+            stmt.setInt(1, limit);
+            ResultSet rs = stmt.executeQuery();
+            while (rs.next()) {
+                Object[] row = new Object[5];
+                row[0] = rs.getString("tagNumber");
+                row[1] = rs.getString("animalType");
+                row[2] = rs.getString("breed");
+                row[3] = rs.getString("status");
+                row[4] = rs.getString("dateRegistered");
+                rows.add(row);
+            }
+        } catch (SQLException e) {
+            System.out.println("Error loading recent animals: " + e.getMessage());
+        }
+        return rows;
+    }
+
+    // counts animals by status
     public int countByStatus(String status) {
         String sql = "SELECT COUNT(*) FROM animals WHERE status = ?";
         try {
             PreparedStatement stmt = conn.prepareStatement(sql);
             stmt.setString(1, status.toUpperCase());
             ResultSet rs = stmt.executeQuery();
-            if (rs.next()) {
-                return rs.getInt(1);
-            }
+            if (rs.next()) return rs.getInt(1);
         } catch (SQLException e) {
             System.out.println("Count error: " + e.getMessage());
         }
         return 0;
     }
 
-    // counts all animals in the database
+    // counts all animals
     public int countAll() {
         String sql = "SELECT COUNT(*) FROM animals";
         try {
             PreparedStatement stmt = conn.prepareStatement(sql);
             ResultSet rs = stmt.executeQuery();
-            if (rs.next()) {
-                return rs.getInt(1);
-            }
+            if (rs.next()) return rs.getInt(1);
         } catch (SQLException e) {
             System.out.println("Count error: " + e.getMessage());
         }
